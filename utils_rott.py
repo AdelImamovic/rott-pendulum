@@ -37,7 +37,7 @@ class setup:
     def_ischeme=1.
     def_delt=0.005
 
-    def __init__(self,time=10.,M=1.,R=2.0638,a0=0.,g0=0.,adot0=15.,gdot0=0,ischeme=6,delt=0.005):
+    def __init__(self,time=def_time,M=1.,R=2.0638,a0=0.,g0=15.,adot0=0,gdot0=0,ischeme=6,delt=0.005):
         self.time=time        
         self.M=M
         self.R=R
@@ -305,6 +305,79 @@ class trajectory_in_phasespace:
             
         plt.hold(holdagain)
         
+    def animate(self):#,framerate=20*(self.setup).dt):
+        #ntimesteps=len(self.a)
+        for alp,gam in zip(self.a,self.g):
+            self.snapshot(alp=alp,gam=gam)
+            assert 0
+        #check if trajectory exists
+        #compile the pendulum into snapshots
+        #
+    
+    def er(angle):
+        return np.array([np.cos(angle),np.sin(angle)])
+    
+    def snapshot(alp=0,gam=0,timeinst=10):#self,time):
+        M=1
+        R=1
+        alp=np.deg2rad(alp)
+        gam=np.deg2rad(gam)
+        Lcolor='green'
+        Icolor='red' 
+        Llwidth=3
+        Ilwidth=3
+        pivot=np.zeros(2)
+        
+        #geometric helper
+        ea=er(alp)
+        eg=er(gam)
+        ea_p=er(alp-np.pi/2)
+        eg_p=er(gam-np.pi/2)
+        
+        l1=l2=l3=l4=1. #for testing                
+        
+        #five pivot points
+        p1=pivot        
+        p2=p1+ea*l1
+        p3=p1-ea*l2
+        p4=p2+eg_p*l3
+        p5=p3+ea_p*l4
+        allpivots=[p1,p2]#,p3,p4,p5]
+        
+        fig=plt.figure()        
+        plt.hold(True)
+        
+        plt.axes().set_aspect('equal')
+        #L shape:
+        #p2->p3
+        t=zip(p2,p3)
+        plt.plot(t[0],t[1],color=Lcolor,linewidth=Llwidth)
+        #p3->p5
+        t=zip(p3,p5)
+        plt.plot(t[0],t[1],color=Lcolor,linewidth=Llwidth)
+        #plt.plot(,color=Lcolor)
+        #I shape:
+        #p2->p4
+        t=zip(p2,p4)
+        plt.plot(t[0],t[1],color=Icolor,linewidth=Ilwidth)
+        
+        #splt.plot(,color=Icolor)
+        for piv in allpivots:
+            circle=plt.Circle(piv,l1*0.05,color='black')
+            fig.gca().add_artist(circle)
+        
+        #cosmetics        
+        fact=2.5
+        plt.xlim([pivot[0]-fact*l1,pivot[1]+fact*l1])
+        plt.ylim([pivot[0]-fact*l3,pivot[1]+fact*l3])
+        plt.xticks([],[])
+        plt.yticks([],[])
+        plt.grid()        
+        plt.show()
+        
+       
+        #return mpllibobject
+        #creates a snapshot in $Format of the current pendulum state
            
    
 #0      
