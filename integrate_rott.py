@@ -6,12 +6,13 @@ Created on Tue Feb 23 16:42:07 2016
 """
 
 
+
+
 from utils_rott import *
 import sys
 
 workingdir='/home/adeli/Documents/Vorlesungen/tutorials/Numerische_Methoden_Umweltphysik/mat2py/rott/rottpy'
 sys.path.append(workingdir)
-
 
 
 if __name__=='__main__': 
@@ -44,7 +45,7 @@ if __name__=='__main__':
     t1.plot(savefig=True,figname='t1')
     t2.plot(savefig=True,figname='t2')
   
-    t1+t2 #overload operator+
+    #t1+t2 #overload operator+
     
     
     #t1.energetics(plotme=False)
