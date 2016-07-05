@@ -309,19 +309,20 @@ class trajectory_in_phasespace:
         #ntimesteps=len(self.a)
         for alp,gam in zip(self.a,self.g):
             self.snapshot(alp=alp,gam=gam)
-            assert 0
+            
         #check if trajectory exists
         #compile the pendulum into snapshots
         #
     
     def er(angle):
+        """Returns the vector that points to point on unit circle."""
         return np.array([np.cos(angle),np.sin(angle)])
     
     def snapshot(alp=0,gam=0,timeinst=10):#self,time):
         M=1
         R=1
-        alp=np.deg2rad(alp)
-        gam=np.deg2rad(gam)
+        #alp=np.deg2rad(alp)
+        #gam=np.deg2rad(gam)
         Lcolor='green'
         Icolor='red' 
         Llwidth=3
