@@ -16,38 +16,41 @@ sys.path.append(workingdir)
 
 
 if __name__=='__main__': 
-    #check for input size
-    #write help function
-
-    #set initial conditions, integration properties, 
-    s1=setup()
+    """This script demonstrates the use of the classes associated with the Rott pendulum.
+    For class and function documentation see the ./rott_documentation.html file
+    """
+    #set up default pendulum and show the parameters 
+    s1=setup(adot0=5)
     s1.print_params()      
 
-    #initialize pendulum geometry / properties
+    #initialize pendulum and show the parameters
     pp1=pendulum_properties(s1)    
     pp1.print_prop()
     
-    #prepare objects for calculations:
+    #prepare the trajectory in phasespace (set of points (alpha,gamma,alphadot,gammadot))
     t1=trajectory_in_phasespace(s1,pp1)
     ischeme=0
     
-    #available integratos
-    
+    #integrate the pendulum with a default scheme   
     t1.integrate(int_scheme=0)
-    
-    s2=setup(adot0=s1.adot0+1e-4)
+   
+    #set up a new pendulum with changed initial conditions
+    s2=setup(a0=60)
     pp2=pendulum_properties(s2)
     t2=trajectory_in_phasespace(s2,pp2)    
     t2.integrate()
-    #t2.integrate(s1,pp1)
     
-    
+    #plot and save the output   
     t1.plot(savefig=True,figname='t1')
     t2.plot(savefig=True,figname='t2')
   
-    #t1+t2 #overload operator+
+    #overloading of +operator in trajectory_in_phasespace class results 
+    #t1+t2
     
-    
+    #animate the pendulum and save the output as test.mp4
+    videoname='animation_test'
+    t1.animate_pendulum(videoname)
+
     #t1.energetics(plotme=False)
     
     
