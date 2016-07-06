@@ -7,6 +7,8 @@ Created on Fri Feb  5 14:42:31 2016
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pylab as plt
+from matplotlib import animation
+
 import re
 pi=np.pi
 # maker of figures
@@ -168,27 +170,12 @@ class pendulum_properties:
 #            self.HR=np.sqrt((self.rhoL/self.rhoR)*(self.hL/self.M)**2)
 #        else:
 #            self.hhR=self.hrat*self.hL
-            
-
-        
-        
-        
-  
-        
-        
-        
-        
+      
      
      
 def rott_dynamics(state,tr,beta0,lambda2,omega2,eta,zeta): #state in phasespace, timerange pend_properties
+    """Casts the equations into a set of first order ODEs."""
     a,g,a1,g1=state
-    #beta0,lambda2,omega2,eta,zeta=bl2o2ez    
-#    a0=svec.a #zeroth derivative of alpha
-#    g0=svec.g
-#    a1=svec.adot #first derivative of alpha
-#    g1=svec.gdot
-    
-    #aux variables
     C=np.cos(g-a-beta0)
     S=-np.sin(g-a-beta0)
     sa=np.sin(a)
@@ -200,8 +187,6 @@ def rott_dynamics(state,tr,beta0,lambda2,omega2,eta,zeta): #state in phasespace,
     
     
     return (a1,g1,a2,g2)
-    
-
 
 
 
@@ -255,19 +240,27 @@ class trajectory_in_phasespace:
         traj2.plot(figname=figname,savefig=True,holdagain=False)
         
     def integrate(self,int_scheme=0):
+        """Given the initial state and a scheme, this integrates the trajectory in phasespace."""
         initstate=(self.setup).initvec
         params=(self.pp).bl2o2ez()
         output=odeint(rott_dynamics,initstate,self.timeinsts,args=params)
         output=np.transpose(output)        
         self.a,self.g,self.adot,self.gdot=output
-        
-    def energetics(self, plotme=False):
+        self.energetics()
+
+    def energetics(self):
+        """Given the evolution in phasespace x(t)=(a,g,adot,gdot) the energies
+        -ekin
+        -epot
+        -etot=ekin+epot
+        are computed and made a property of the instance.
+        """
+        #plotme=False
         a=self.a
         g=self.g
         adot=self.adot
         gdot=self.gdot
-        
-        #pendprop
+        #alias for pendulum properties
         beta0=(self.pp).beta0
         It=(self.pp).It
         Ic=(self.pp).Ic
@@ -278,18 +271,17 @@ class trajectory_in_phasespace:
         app=(self.pp).a
         mt=(self.pp).mt     
         C=np.cos(g-a-beta0)
-        
-        #energies
+        #energy calculations
         self.ekin=0.5*It*adot**2+0.5*Ic*gdot**2+mc*b*c*C*adot*gdot
         self.epot=-gpp*(mt*app*np.cos(a)+mc*c*np.cos(g))      
         self.etot=self.ekin+self.epot
-        #measure for dissipation
+        #evolution of energy loss (numerical dissipation)
         self.dE=max(self.etot[0]-np.min(self.etot),np.max(self.etot)-self.etot[0])
         
-        if plotme:
-            plt.plot(self.timeinsts,self.etot)
-            plt.savefig('energetics.pdf')
-            print 'the numerical energy dissipation is '+str(self.dE)
+        #if plotme:
+        #    plt.plot(self.timeinsts,self.etot)
+        #    plt.savefig('energetics.pdf')
+        #    print 'the numerical energy dissipation is '+str(self.dE)
         #self.ekin=0.5*setup.It*self.adot**2+0.5*setup
             
     def plot(self,figname,var='adotgdot',savefig=True,holdagain=False):
@@ -305,62 +297,129 @@ class trajectory_in_phasespace:
             
         plt.hold(holdagain)
         
-    def animate(self):#,framerate=20*(self.setup).dt):
-        #ntimesteps=len(self.a)
-        for alp,gam in zip(self.a,self.g):
-            self.snapshot(alp=alp,gam=gam)
-            
-        #check if trajectory exists
-        #compile the pendulum into snapshots
-        #
-    
-    def er(angle):
-        """Returns the vector that points to point on unit circle."""
-        return np.array([np.cos(angle),np.sin(angle)])
-    
-    def snapshot(alp=0,gam=0,timeinst=10):#self,time):
-        M=1
-        R=1
-        #alp=np.deg2rad(alp)
-        #gam=np.deg2rad(gam)
-        Lcolor='green'
-        Icolor='red' 
-        Llwidth=3
-        Ilwidth=3
-        pivot=np.zeros(2)
+    def animate_pendulum(self,videoname='basic_animation'):#,framerate=20*(self.setup).dt):
+        """Creates an animation of the Rott pendulum. If filename is given filename+'.mp4'is created."""        
+        #set up the figure,axes,line
+        fig = plt.figure()
+        ax = plt.axes()
+        line, = ax.plot([], [],'o-', lw=3)
+        ax.set_xlim([-3,3])
+        ax.set_ylim([-3,3])
+        ax.set_aspect('equal')
+        time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
+        energy_text = ax.text(0.02, 0.90, '', transform=ax.transAxes)
         
+        #function to produce the background that does not change
+        def init():
+            line.set_data([],[])
+            time_text.set_text('')
+            energy_text.set_text('')
+            return line, time_text, energy_text
+        
+        #function animate
+        def animate(i):
+            tinst = 4*i*(self.setup).delt
+            time_text.set_text('time=%.1f'%(self.timeinsts)[4*i])
+            energy_text.set_text('energy=%.1f'%(self.etot)[4*i])
+            p5,p3,p2,p4=self.pivot_coordinates(tinst)
+     
+            line.set_data(zip(p5,p3,p2,p4))
+            line.set_c('b')
+            #line.set_data(zip(p2,p4))
+            #line.set_c('r')
+            return line,
+
+        #timing for the animation
+        from time import time
+        t0=time()
+        animate(0)
+        t1=time()
+        
+        #create and save the animation
+        interval=4*1200*(self.setup).delt-(t1-t0)
+        myanim=animation.FuncAnimation(fig,animate,init_func=init,frames=1200,interval=interval,blit=True)         
+        myanim.save('basic_animation.mp4', fps=50, extra_args=['-vcodec', 'libx264'])
+
+        #plt.show()
+            
+   
+    def pivot_coordinates(self,timeinstance=10):#self,time):
+        """Compute the coordinates of the four pivot points of the Rott Pendulum (clockwise)
+        p3______p2
+        |        \
+        |         \
+        |          \
+        |           p4
+        p5			  
+        Parameters
+        ----------
+        timeinstance : float
+            desired time instance
+        
+        Returns
+        ------
+        coordinates : zip of four coordinates in arrays
+                zip(p5,p3,p2,p4)=((xp_i),(yp_i)) for i=1,2,3,4
+        Raises
+        ------
+        """
+        if timeinstance>self.time:
+            print 'timeindex given out of integration range' 
+            pass
+        idx=timeinstance//(self.setup).delt
+        alp=(self.a)[idx]
+        gam=(self.g)[idx]
+              
+        pivot=np.zeros(2)
+
+    	def er(angle):
+            """Returns the vector that points to unit circle at an angle ''angle'' from the abscissa."""
+            return np.array([np.cos(angle),np.sin(angle)])
+
+
         #geometric helper
         ea=er(alp)
-        eg=er(gam)
         ea_p=er(alp-np.pi/2)
         eg_p=er(gam-np.pi/2)
         
-        l1=l2=l3=l4=1. #for testing                
-        
+        #geometry of pendulum
+        l1=l2=l3=l4=1.                  
         #five pivot points
         p1=pivot        
         p2=p1+ea*l1
         p3=p1-ea*l2
         p4=p2+eg_p*l3
         p5=p3+ea_p*l4
-        allpivots=[p1,p2]#,p3,p4,p5]
-        
-        fig=plt.figure()        
+                
+        return p5,p3,p2,p4
+
+    def snapshot(self):
+        """Function creates a snapshot of the pendulum - tobecompleted"""
+        Lcolor='green'
+        Icolor='red'
+        Llwidth=3
+        ILwidth=3
+
+        fig=plt.figure() 
+        ax = plt.axes(xlim=(-3,3), ylim=(-3, 3))
         plt.hold(True)
         
         plt.axes().set_aspect('equal')
         #L shape:
         #p2->p3
+        
+        
         t=zip(p2,p3)
-        plt.plot(t[0],t[1],color=Lcolor,linewidth=Llwidth)
+        ax.plot(t[0],t[1],color=Lcolor,linewidth=Llwidth)
         #p3->p5
         t=zip(p3,p5)
-        plt.plot(t[0],t[1],color=Lcolor,linewidth=Llwidth)
+        ax.plot(t[0],t[1],color=Lcolor,linewidth=Llwidth)
+
         #plt.plot(,color=Lcolor)
         #I shape:
         #p2->p4
         t=zip(p2,p4)
-        plt.plot(t[0],t[1],color=Icolor,linewidth=Ilwidth)
+        ax.plot(t[0],t[1],color=Icolor,linewidth=Ilwidth)
         
         #splt.plot(,color=Icolor)
         for piv in allpivots:
@@ -368,13 +427,14 @@ class trajectory_in_phasespace:
             fig.gca().add_artist(circle)
         
         #cosmetics        
-        fact=2.5
-        plt.xlim([pivot[0]-fact*l1,pivot[1]+fact*l1])
-        plt.ylim([pivot[0]-fact*l3,pivot[1]+fact*l3])
-        plt.xticks([],[])
-        plt.yticks([],[])
-        plt.grid()        
-        plt.show()
+        #fact=2.5
+        #plt.xlim([pivot[0]-fact*l1,pivot[1]+fact*l1])
+        #plt.ylim([pivot[0]-fact*l3,pivot[1]+fact*l3])
+        #plt.xticks([],[])
+        #plt.yticks([],[])
+        #plt.grid()        
+        #plt.show()
+        #return ax.get_lines()
         
        
         #return mpllibobject
