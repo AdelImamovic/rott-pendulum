@@ -2,32 +2,33 @@
 """
 Created on Fri Feb  5 14:42:31 2016
 
-@author: adeli
+@author: Adel Imamovic (adeli@ethz.ch)
 """
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pylab as plt
 from matplotlib import animation
 
-import re
 pi=np.pi
-# maker of figures
 
-class setup:
-    _geomparams={
-    'M':'documentation',
-    'R':'documentation'}
+
+class RottSetup:
+    """The RottSetup class contains information on the initial conditions,
+    numerical integration paramters, and pendulum geometries. 
+    It is the Front-End for students of the ETH lecture (Christoph Schär)
+    "Numerische Methoden der Umweltphysik"
     
-    _initvalues={
-    'a0':'documentation',
-    'g0':'documentation',
-    'adot':'documentation',
-    'gdot0':'documentation'}
+    Usage:
+    -----
+        s1=RottSetup();
     
-    _integrationparams={
-    'ischeme':'documentation',
-    'time':'documentation',
-    'delt':'documentation'}
+    Parameters:
+    ----------
+        
+    TODO:
+    ----
+        DONE
+    """
     
     def_time=60.
     def_M=1.
@@ -38,91 +39,143 @@ class setup:
     def_gdot0=0.
     def_ischeme=1.
     def_delt=0.005
-
-    def __init__(self,time=def_time,M=1.,R=2.0638,a0=0.,g0=15.,adot0=0,gdot0=0,ischeme=6,delt=0.005):
-        self.time=time        
-        self.M=M
-        self.R=R
+    def __init__(self,a0=0.,g0=90.,adot0=0.,gdot0=0.,
+                 time=60.,delt=0.005,ischeme=6,
+                 M=1.,R=2.0638):
+        """Initilializes the Rott Pendulum (L+I) with default arguments.
+        Converts initial angles/angular speeds a0,g0,adot0,gdot0 to radians.
+        
+        Keyword Arguments:
+        -----------------
+        Initial Conditions
+            a0 :    float
+                initial deflection angle of L part in degree
+            g0 :    float
+                initial deflection angle of I part in degree per second
+            adot0:  float
+                initial angular speed of L part in degree
+            gdot0:  float
+                initial angular speed of I part in degree per second
+        
+        Integration Parameters:
+            time:   float
+                total integration time in seconds
+            delt:   float
+                time step size in seconds
+            ischeme: int
+                integration scheme index
+                
+        Pendulum Parameters:
+            M: float
+                geometric parameter
+            R: float
+                geometric parameter   
+        """   
+        #initial state
         self.a0=np.deg2rad(a0)
         self.g0=np.deg2rad(g0)
-        self.adot0=adot0
-        self.gdot0=gdot0
-        self.initvec=(self.a0,self.g0,self.adot0,self.gdot0)
-        self.ischeme=ischeme
-        self.delt=delt
+        self.adot0=np.deg2rad(adot0)
+        self.gdot0=np.deg2rad(gdot0)
+        self.initvec=(self.a0,self.g0,self.adot0,self.gdot0)        
         
+        #integration parameters
+        self.time=time  
+        self.delt=delt  
+        self.ischeme=ischeme
+        
+        #pendulum parameters
+        self.M=M
+        self.R=R
+        
+        #show the users what has been initialized
+        #self.print_params()
         
     def print_params(self):
+        """Prints the defined parameters of the instance."""
+        print 10*'-'
+        print 'Initial State: '
+        print 'a0, g0, adot0, gdot0 in rad (rad/sec)'
+        print (self.a0,self.g0,self.adot0,self.gdot0)
+        print 10*'-'
+        print 'Integration Parameters:'
+        print 'time, delt, ischeme'
+        print (self.time,self.delt,self.ischeme)
+        print 10*'-'
+        print 'Pendulum Parameters:'
         print 'M,R'
         print (self.M,self.R)
-        print 'a0,g0,adot0,gdot0'
-        print (self.a0,self.g0,self.adot0,self.gdot0)
-        print 'ischeme,time,delt'
-        print (self.ischeme,self.time,self.delt)
-        
-        
-        
-class pendulum_properties:
-    def __init__(self,setup,ini_prop=6,ndim=1):
-        self.PendulumType=ini_prop
-        self.ndim=1
-        if ini_prop==6:
-            self.M=setup.M
-            if setup.M<0.:
-                print('WARNING: you chose M<0 (invalid). M=1.')
-                self.M=1.
-            self.R=setup.R
-            self.g=9.81
-            
-            self.rho=1.
-            self.rhoL=1.
-            self.rhoR=1.
-            self.b0=0.2
-            self.hL=self.b0*1.5
-            self.hR=self.b0*1.5 #!Redundant
-            
-            self.hR=np.sqrt((self.rhoL/self.rhoR)*(self.hL/self.M)**2)
-            if self.R>0.:
-                self.find6_h()
-                #nasty: self.hL,self.hR=find6_h(self.R,self.M,self.rhoL,self.rho,g=g,self.b0,self.hL,self.hR)
-            #self.aux=design_rott6(self.rhoL,self.rho,self.rhoR,g=g,self.b0,self.hL,self.hR) #physical auxillarly properties
-            #self.mc,self.mt,self.s,self.a,self.b,self.bL,self.c,self.Ic,self.It=self.aux
-            self.beta0=np.pi/2.
-            self.design_rott6()
-            
-            
-            #unused parameters?
-            self.d=0
-            self.mL=0.
-            self.mR=0.            
-            self.t=0.          
-            
-            #pendulum parameters 
-            self.lambda2=self.g*self.mt*self.a/self.It
-            self.omega2=self.g*self.mc*self.c/self.Ic
-            self.eta=self.mc*self.b*self.c/self.It
-            self.zeta=self.mc*self.b*self.c/self.Ic
-            
-            self.R=np.sqrt(self.omega2/self.lambda2)
-            self.M=np.sqrt(self.a*self.mt/(self.c*self.mc))
-            self.Q=self.c*self.mc*self.b/np.sqrt(self.Ic*self.It)
-            
-            if self.ndim==1:
-                self.tau2=4*(pi**2)/self.omega2
-                self.tau=np.sqrt(self.tau2)
-                self.g=self.tau2*self.g
-                self.lambda2=self.tau2*self.lambda2
-                self.omega2=self.tau2*self.omega2
-                
+        print 10*'-'
            
-        else:
-            print 'Pendulum Type not defined -- > Assert'
-            assert 0
+class RottProperties:
+    """ Contains the geometric information of the Rott Pendulum.
+    Calculates further quantities for the integration.
+    
+    Parameters:
+    ----------
+        pend_type:
+        
+        pend_type=1 Standard resonant Rott pendulum. In this case you need 
+        to specify very little information about the pendulum.
+        
+        pend_type=2 A generalized Rott pendulum, which is composed by 
+        three arbitrary mass lines
+       
+        pend_type=3 Fully general double pendulum. In this case one needs 
+        to specify for both pendulum elements, the momenta of inertia, 
+        the mass and the center of gravity.
+        
+        pend_type=4 A physical pendulum made of metal plates. Given 
+        some initial geometrical information, the initialization solves 
+        for a pendulum with a given frequency ratio R.
+        
+        pend_type=5 A physical pendulum made of metal plates 
+        and rounded corners. Given some initial geometrical information, 
+        the initialization solves for a pendulum with a given frequency ratio R.
+        
+        pend_type=6 almost like a Rott pendulum composed of three mass lines, 
+        full generality in definition, but b is adjusted such that beta0=pi/2     
+    
+    TODO:
+    ----
+        So far only pend_prop==6 is implemented
+    """
+    
+    #some hard coded constants
+    pend_geoms=range(1,7)
+   
+    def __init__(self,setup,pend_type=6,make_ndim=1):
+        """Initializes plot properties.
+
+        Arguments:
+        ---------
+            setup:      RottSetup
+                        Init properties for Pendulum
             
-    def bl2o2ez(self):
-        return (self.beta0,self.lambda2,self.omega2,self.eta,self.zeta)
+            pend_type:  int in 1-6
+                        switch for selecting different pendulum geometries
+                        
+            make_ndim:  bool
+                        shall we make the pendulum non-dimensional?                       
+        """      
+        
+        if pend_type not in [6]:
+            print "Pendulum geometry is not implemented." 
+            assert 0
+        self.setup=setup    
+        self.pend_type=pend_type
+        self.make_ndim=make_ndim
+        #calcualte the properties once pendulum type is known
+        self.calculate_properties()
+        self.init_general_params()
          
     def print_prop(self):
+        """Prints all parameters used for the integration to stdout.
+        
+        TODO:
+            Nicer and more readable print layout ifneedbe
+            Add decorators for pend_type specific properties (instead of if/elseif)
+        """
+        
         print 20*'-'
         print 'moment of inertia: It, Ic, mt, mc'
         print (self.It,self.Ic,self.mt,self.mc)
@@ -138,14 +191,91 @@ class pendulum_properties:
         print 20*'-'   
         print 'oscillations periods [s],ratio'
         print (2*pi/np.sqrt(self.lambda2),2*pi/np.sqrt(self.omega2),np.sqrt(self.omega2/self.lambda2))
-        #print 20*'-' 
-        #print 'oscillations periods [1],ratio'
-        #print (2*pi/np.sqrt(self.lambda2),2*pi/np.sqrt(self.omega2),np.sqrt(self.omega2/self.lambda2))
-        #print 20*'-' 
+        if self.pend_type==6:
+            print 20*'-'
+            print 'geometry: hL, bL, b, hR, a, c, beta0[deg], g'
+            print [self.hL,self.bL,self.b,self.hR,self.a,self.c,self.beta0*180./pi,self.g]								
+            print 'density: rhoL, rho, rhoR'								
+            print [self.rhoL,self.rho,self.rhoR]        
+        
+    def calculate_properties(self):
+        """Decides at runtime which calculate_properties method to call.
+        
+        Use of dispatch method        
+        """
+        calc_method_name='calc_pendtype_'+str(self.pend_type)
+        calc_method=getattr(self,calc_method_name,lambda:'nothing')
+        calc_method()   
+     
+    def calc_pendtype_6(self):
+        """Calculates properties of pendulum of pend_type 6        
+        Is called by calculate_properties if self.pend_type is 6.
+        
+        Calculates pendulum properties.        
+        """
+        setup=self.setup
+        self.M=setup.M
+        if setup.M<0.:
+            print('WARNING: you chose M<0 (invalid). M=1.')
+            self.M=1.
+        self.R=setup.R
+        self.g=9.81 # g is a property of the instance, because it can be rescaled
+        
+        self.rho=1.
+        self.rhoL=1.
+        self.rhoR=1.
+        self.b0=0.2
+        self.hL=self.b0*1.5
+        self.hR=self.b0*1.5 #!Redundant
+        
+        self.hR=np.sqrt((self.rhoL/self.rhoR)*(self.hL/self.M)**2)
+        if self.R>0.:
+            self.find6_h()
+        
+        self.design_rott6()
+        self.beta0=np.pi/2.      
+        
+        #unused parameters?
+        self.d=0.
+        self.mL=0.
+        self.mR=0.            
+        self.t=0.
+    
+    def init_general_params(self):
+        #general pendulum parameters 
+        self.lambda2=self.g*self.mt*self.a/self.It
+        self.omega2=self.g*self.mc*self.c/self.Ic
+        self.eta=self.mc*self.b*self.c/self.It
+        self.zeta=self.mc*self.b*self.c/self.Ic
+        
+        self.R=np.sqrt(self.omega2/self.lambda2)
+        self.M=np.sqrt(self.a*self.mt/(self.c*self.mc))
+        self.Q=self.c*self.mc*self.b/np.sqrt(self.Ic*self.It)
+        
+        if self.make_ndim==1:
+            self.tau2=4*(pi**2)/self.omega2
+            self.tau=np.sqrt(self.tau2)
+            self.g=self.tau2*self.g
+            self.lambda2=self.tau2*self.lambda2
+            self.omega2=self.tau2*self.omega2
+            
+            
+    def calc_pendtype_5(self):
+        #function to be called if pend_prop==5
+        pass
+    def calc_pendtype_4(self):
+        pass
+    def calc_pendtype_3(self):
+        pass
+    def calc_pendtype_2(self):
+        pass
+    def calc_pendtype_1(self):
+        pass
      
      #this function designs a physical pendulum (pendulum type 5) from geometrical 
      #and material parameters. The mass of the pendulum is concentrated in a
-     #line with densities rhoL, rho and rhoR [kg/m], respectively.      
+     #line with densities rhoL, rho and rhoR [kg/m], respectively.
+     
     def design_rott6(self):
         self.mc=self.rhoR*self.hR
         self.mt=self.rhoL*self.hL + self.rho*(2*self.b0) + self.mc     
@@ -158,22 +288,73 @@ class pendulum_properties:
         #compute momenta of inertia
         self.It= (self.rhoL*(self.hL)**3)/3+self.rhoL*self.hL*(self.bL**2)+ (self.rho*(self.bL**3))/3 + (self.rho*(self.b**3))/3. + self.rhoR*self.hR*(self.b)**2
         self.Ic= (self.rhoR*(self.hR)**3)/3.
+        
+        
+    def bl2o2ez(self):
+        return (self.beta0,self.lambda2,self.omega2,self.eta,self.zeta)
      
-    #this function designs a physical pendulum (pendulum type 5) from geometrical 
-    #and material parameters such that it has a pre-defined ratio R between the periods of
-    #the large and small pendulas 
     def find6_h(self):
         pass
-#        self.hrat=self.hR/self.hL
-#        self.hL=self.fzero(self.funct,self.hL0)
-#        if self.M>0:
-#            self.HR=np.sqrt((self.rhoL/self.rhoR)*(self.hL/self.M)**2)
-#        else:
-#            self.hhR=self.hrat*self.hL
+        """Designs parameters for a physical pendulum (pendulum type 6) 
+        from geometrical and material parameters such that it has a pre-defined 
+        ratio R between the periods of the large and small pendulas.
+        
+        POST:
+        ----
+            changes hR,hL values of instance only
+        
+        
+        TODO:
+        ----
+            design_rott6 call is unfortunate design_rott6_var workaround qnd
+            unclear what the root search is needed for
+        
+        """
+        from scipy.optimize import newton
+        
+        def design_rott6_var(rhoL,rho,rhoR,g,b0,hL,hR):
+            mc=rhoR*hR
+            mt=rhoL*hL + rho*(2.*b0) + mc     
+            #compute center of gravity and geometry
+            s=(-rhoL*hL*b0+rhoR*hR*b0)/mt
+            b =b0-s
+            bL=b0+s
+            a=rhoL*hL*(hL/2.) / mt
+            c=hR/2.
+            #compute momenta of inertia
+            It= (rhoL*(hL)**3)/3.+rhoL*hL*(bL**2)+ (rho*(bL**3))/3. + (rho*(b**3))/3. + rhoR*hR*(b)**2
+            Ic= (rhoR*(hR)**3)/3.
+            return (mc,mt,s,a,b,bL,c,Ic,It)
+
+        def aux_funct(hhL):
+            """auxillary function."""
+            if (self.M>0):
+                hhR=np.sqrt((self.rhoL/self.rhoR)*(hhL/self.M)**2)
+            else:
+                hhR=hrat*hhL
+            
+            mc,mt,s,a,b,bL,c,Ic,It=design_rott6_var(self.rhoL,self.rho,self.rhoR,self.g,self.b0,hhL,hhR)
+            lambda2=self.g*mt*a/It
+            omega2=self.g*mc*c/Ic                
+            return omega2/lambda2-self.R**2   
+      
+        hL0=(self.hL)*1.
+        hR0=(self.hR)*1.
+        hrat=hL0,hR0 #ratios
+        #find zeros of aux_funct, starting from hL0 guess
+        self.hL=newton(aux_funct,hL0)
+        
+        if self.M>0:
+            self.hR=np.sqrt((self.rhoL/self.rhoR)*(self.hL/self.M)**2)
+        else:
+            self.hR=hrat*self.hL  
+        
+            
+
       
      
      
-def rott_dynamics(state,tr,beta0,lambda2,omega2,eta,zeta): #state in phasespace, timerange pend_properties
+def RottDynamics(state,tr,beta0,lambda2,omega2,eta,zeta): #state in phasespace, timerange pend_properties
     """Casts the equations into a set of first order ODEs."""
     a,g,a1,g1=state
     C=np.cos(g-a-beta0)
@@ -185,24 +366,39 @@ def rott_dynamics(state,tr,beta0,lambda2,omega2,eta,zeta): #state in phasespace,
     a2=(-lambda2*sa+eta*C*omega2*sg-eta*(zeta*C*S*a1**2+S*g1**2))/(1-eta*zeta*C**2)
     g2=(-omega2*sg+zeta*C*lambda2*sa+zeta*(eta*C*S*g1**2+S*a1**2))/(1-eta*zeta*C**2)
     
-    
     return (a1,g1,a2,g2)
 
 
 
-#type for point in phase space 
-class state:
+
+class RottState:
+    """Contains the State of the Pendulum as Phase Space coordinate.
+    TODO:
+    ----
+        Redundant?
+    """
     def __init__(self,a,g,adot,gdot):
         self.a=a
         self.g=g
         self.adot=adot
         self.gdot=gdot
         self.vec=(a,g,adot,gdot)
+      
     
-        
-        
-#class containing all the output after calculations     
-class trajectory_in_phasespace:
+class RottTrajectoryInPhasespace:
+    """Contains all the information on the phase space trajectory of the Rott
+    Pendulum.
+    
+    Parameters:
+    ----------
+        to be filled in!
+    
+    TODO:
+    ----
+        Seperate Integration schemes from it
+        Make function RottDynamics a method of the class    
+    
+    """
     def __init__(self,s0,pp):
         self.timeinsts=np.arange(0.,s0.time,s0.delt)
         self.setup=s0
@@ -232,7 +428,7 @@ class trajectory_in_phasespace:
         #    print t
         #    print self.timeinsts
         #i=np.where(self.timeinsts==t)[0][0]
-        return state(self.a[i],self.g[i],self.adot[i],self.gdot[i])
+        return self.a[i],self.g[i],self.adot[i],self.gdot[i]
         
     def __add__(self,traj2):
         figname='addition'
@@ -240,19 +436,27 @@ class trajectory_in_phasespace:
         traj2.plot(figname=figname,savefig=True,holdagain=False)
         
     def integrate(self,int_scheme=0):
-        """Given the initial state and a scheme, this integrates the trajectory in phasespace."""
+        """Given the initial state and a scheme, this integrates the trajectory in phasespace.
+        Parameters
+        ----------
+            int_scheme : number
+            Numer of integrationscheme to be used
+        """           
         initstate=(self.setup).initvec
         params=(self.pp).bl2o2ez()
-        output=odeint(rott_dynamics,initstate,self.timeinsts,args=params)
-        output=np.transpose(output)        
+        output=odeint(RottDynamics,initstate,self.timeinsts,args=params)
+        output=np.transpose(output)
+        #cast the output to the values a,g,adot,gdot
         self.a,self.g,self.adot,self.gdot=output
+        #"diagnose" the energies
         self.energetics()
 
     def energetics(self):
-        """Given the evolution in phasespace x(t)=(a,g,adot,gdot) the energies
-        -ekin
-        -epot
-        -etot=ekin+epot
+        """Given the evolution in phasespace x(t)=(a,g,adot,gdot) calculates the energies.
+
+        -ekin (kinetic energies)
+        -epot (potential energies
+        -etot=ekin+epot (the conserved sum of both, i.e. the total energy)
         are computed and made a property of the instance.
         """
         #plotme=False
@@ -277,14 +481,16 @@ class trajectory_in_phasespace:
         self.etot=self.ekin+self.epot
         #evolution of energy loss (numerical dissipation)
         self.dE=max(self.etot[0]-np.min(self.etot),np.max(self.etot)-self.etot[0])
-        
-        #if plotme:
-        #    plt.plot(self.timeinsts,self.etot)
-        #    plt.savefig('energetics.pdf')
-        #    print 'the numerical energy dissipation is '+str(self.dE)
-        #self.ekin=0.5*setup.It*self.adot**2+0.5*setup
             
     def plot(self,figname,var='adotgdot',savefig=True,holdagain=False):
+        """Function to plot the time series of the variables in var.
+
+        TODO:
+        ----
+            so far only adotgdot can be plotted
+            add: energies etc
+        """
+
         if not (var=='adotgdot'):
             print 'no valid variable to plot'
         plt.plot(self.timeinsts,self.adot,linewidth=0.5)
@@ -297,9 +503,27 @@ class trajectory_in_phasespace:
             
         plt.hold(holdagain)
         
-    def animate_pendulum(self,videoname='basic_animation'):#,framerate=20*(self.setup).dt):
-        """Creates an animation of the Rott pendulum. If filename is given filename+'.mp4'is created."""        
-        #set up the figure,axes,line
+    def animate_rott(self,videoname='basic_animation'):#,framerate=20*(self.setup).dt):
+        """Creates an animation of the Rott pendulum
+        and creates video 'videoname.mp4'.
+       
+        PRE:
+        ----
+            Trajectory must already be calculated.
+
+        Parameters:
+        ----------
+            videoname: string
+            videoname (without format suffices)
+
+        TODO:
+        ----
+            Add different geometries of the Pendulum
+            Add capability to modify framerate
+    
+        """
+     
+        #set up the figure,axes,line,text boxes for time and energy
         fig = plt.figure()
         ax = plt.axes()
         line, = ax.plot([], [],'o-', lw=3)
@@ -309,20 +533,20 @@ class trajectory_in_phasespace:
         time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
         energy_text = ax.text(0.02, 0.90, '', transform=ax.transAxes)
         
-        #function to produce the background that does not change
+        #function to produce the axes background that does not change
         def init():
             line.set_data([],[])
             time_text.set_text('')
             energy_text.set_text('')
             return line, time_text, energy_text
         
-        #function animate
+        #function to add lines for every snapshot 
         def animate(i):
             tinst = 4*i*(self.setup).delt
             time_text.set_text('time=%.1f'%(self.timeinsts)[4*i])
             energy_text.set_text('energy=%.1f'%(self.etot)[4*i])
             p5,p3,p2,p4=self.pivot_coordinates(tinst)
-     
+            #retrieve position of pivot points
             line.set_data(zip(p5,p3,p2,p4))
             line.set_c('b')
             #line.set_data(zip(p2,p4))
@@ -338,13 +562,14 @@ class trajectory_in_phasespace:
         #create and save the animation
         interval=4*1200*(self.setup).delt-(t1-t0)
         myanim=animation.FuncAnimation(fig,animate,init_func=init,frames=1200,interval=interval,blit=True)         
-        myanim.save('basic_animation.mp4', fps=50, extra_args=['-vcodec', 'libx264'])
-
-        #plt.show()
+        myanim.save('./Animations/basic_animation.mp4', fps=50, extra_args=['-vcodec', 'libx264'])
+        #return myanim
+       
             
    
     def pivot_coordinates(self,timeinstance=10):#self,time):
-        """Compute the coordinates of the four pivot points of the Rott Pendulum (clockwise)
+        """Compute the coordinates of the four pivot points of the Rott Pendulum
+        at the timeslice before timeinstance.
         p3______p2
         |        \
         |         \
@@ -358,22 +583,25 @@ class trajectory_in_phasespace:
         
         Returns
         ------
-        coordinates : zip of four coordinates in arrays
-                zip(p5,p3,p2,p4)=((xp_i),(yp_i)) for i=1,2,3,4
+        coordinates : four coordinates in arrays
+                p5,p3,p2,p4=((xp_i),(yp_i)) for i=1,2,3,4
         Raises
         ------
         """
         if timeinstance>self.time:
             print 'timeindex given out of integration range' 
             pass
-        idx=timeinstance//(self.setup).delt
+        
+        #get timeslice index idx befor the time instance
+        idx=int(timeinstance//(self.setup).delt)
         alp=(self.a)[idx]
         gam=(self.g)[idx]
-              
+      
         pivot=np.zeros(2)
 
     	def er(angle):
-            """Returns the vector that points to unit circle at an angle ''angle'' from the abscissa."""
+            """Returns the vector that points to unit circle at an 
+            angle ''angle'' from the abscissa."""
             return np.array([np.cos(angle),np.sin(angle)])
 
 
@@ -394,7 +622,16 @@ class trajectory_in_phasespace:
         return p5,p3,p2,p4
 
     def snapshot(self):
-        """Function creates a snapshot of the pendulum - tobecompleted"""
+        """Function creates a snapshot of the pendulum.
+        
+        
+        TODO:
+        ----
+            Still a scelecton.
+        
+        """
+        
+        
         Lcolor='green'
         Icolor='red'
         Llwidth=3
@@ -442,27 +679,39 @@ class trajectory_in_phasespace:
            
    
 #0      
-def dummy_integrator(oldstate): #dummy integrator
-    newstate=oldstate #do the integration here
-    return newstate
+class Integrator:
+    """
+    Encapsulation of different integrator functionalities.
     
-def ode2cntr(old):
-    pass
-
-def ode3abs(old):
-    pass
-
-def ode3rk(old):
-    pass
-
-def ode6rk(old):
-    pass
-
-def ode8rk_hairer(old):
-    pass
-
-def ode8rk_scalar(old):
-    pass
-
+    TODO:
+        implementation of different integrators (@andreaarteaga)
+        Maybe with dispatch methods?    
+    """
     
+    def __init__(self,ischeme):
+        _integratorlist={0:self.dummy_integrator, 1:self.ode2cntr}
+
+    def dummy_integrator(oldstate): #dummy integrator
+        newstate=oldstate #do the integration here
+        return newstate
         
+    def ode2cntr(old):
+        pass
+
+    def ode3abs(old):
+        pass
+
+    def ode3rk(old):
+        pass
+
+    def ode6rk(old):
+        pass
+
+    def ode8rk_hairer(old):
+        pass
+
+    def ode8rk_scalar(old):
+        pass
+
+        
+            
