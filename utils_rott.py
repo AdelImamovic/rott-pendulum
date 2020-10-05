@@ -87,25 +87,7 @@ class RottSetup:
         self.M=M
         self.R=R
         
-        #show the users what has been initialized
-        #self.print_params()
-        
-    def print_params(self):
-        """Prints the defined parameters of the instance."""
-        print 10*'-'
-        print 'Initial State: '
-        print 'a0, g0, adot0, gdot0 in rad (rad/sec)'
-        print (self.a0,self.g0,self.adot0,self.gdot0)
-        print 10*'-'
-        print 'Integration Parameters:'
-        print 'time, delt, ischeme'
-        print (self.time,self.delt,self.ischeme)
-        print 10*'-'
-        print 'Pendulum Parameters:'
-        print 'M,R'
-        print (self.M,self.R)
-        print 10*'-'
-           
+
 class RottProperties:
     """ Contains the geometric information of the Rott Pendulum.
     Calculates further quantities for the integration.
@@ -159,8 +141,8 @@ class RottProperties:
         """      
         
         if pend_type not in [6]:
-            print "Pendulum geometry is not implemented." 
-            assert 0
+            print("Pendulum geometry is not implemented.")
+            raise NotImplemented
         self.setup=setup    
         self.pend_type=pend_type
         self.make_ndim=make_ndim
@@ -174,8 +156,8 @@ class RottProperties:
         TODO:
             Nicer and more readable print layout ifneedbe
             Add decorators for pend_type specific properties (instead of if/elseif)
-        """
-        
+
+
         print 20*'-'
         print 'moment of inertia: It, Ic, mt, mc'
         print (self.It,self.Ic,self.mt,self.mc)
@@ -197,7 +179,7 @@ class RottProperties:
             print [self.hL,self.bL,self.b,self.hR,self.a,self.c,self.beta0*180./pi,self.g]								
             print 'density: rhoL, rho, rhoR'								
             print [self.rhoL,self.rho,self.rhoR]        
-        
+        """
     def calculate_properties(self):
         """Decides at runtime which calculate_properties method to call.
         
@@ -217,6 +199,7 @@ class RottProperties:
         self.M=setup.M
         if setup.M<0.:
             print('WARNING: you chose M<0 (invalid). M=1.')
+            raise RuntimeWarning
             self.M=1.
         self.R=setup.R
         self.g=9.81 # g is a property of the instance, because it can be rescaled
@@ -492,16 +475,18 @@ class RottTrajectoryInPhasespace:
         """
 
         if not (var=='adotgdot'):
-            print 'no valid variable to plot'
-        plt.plot(self.timeinsts,self.adot,linewidth=0.5)
-        plt.hold(True)
-        plt.plot(self.timeinsts,self.gdot,linewidth=0.5)
+            print('no valid variable to plot')
+            raise UserWarning
+        f,ax = plt.subplots()
+        ax.plot(self.timeinsts,self.adot,linewidth=0.5)
+        #plt.hold(True)
+        ax.plot(self.timeinsts,self.gdot,linewidth=0.5)
         
         if not holdagain:
             #plt.legend()
-            plt.savefig(figname+str(self.time)+'.pdf',dpi=300)
+            f.savefig(figname+str(self.time)+'.pdf',dpi=300)
             
-        plt.hold(holdagain)
+        #plt.hold(holdagain)
         
     def animate_rott(self,videoname='basic_animation'):#,framerate=20*(self.setup).dt):
         """Creates an animation of the Rott pendulum
@@ -562,7 +547,7 @@ class RottTrajectoryInPhasespace:
         #create and save the animation
         interval=4*1200*(self.setup).delt-(t1-t0)
         myanim=animation.FuncAnimation(fig,animate,init_func=init,frames=1200,interval=interval,blit=True)         
-        myanim.save('./Animations/basic_animation.mp4', fps=50, extra_args=['-vcodec', 'libx264'])
+        myanim.save('basic_animation.gif',fps=50, extra_args=['-vcodec', 'libx264'])
         #return myanim
        
             
@@ -589,7 +574,7 @@ class RottTrajectoryInPhasespace:
         ------
         """
         if timeinstance>self.time:
-            print 'timeindex given out of integration range' 
+            print('timeindex given out of integration range')
             pass
         
         #get timeslice index idx befor the time instance
@@ -599,7 +584,7 @@ class RottTrajectoryInPhasespace:
       
         pivot=np.zeros(2)
 
-    	def er(angle):
+        def er(angle):
             """Returns the vector that points to unit circle at an 
             angle ''angle'' from the abscissa."""
             return np.array([np.cos(angle),np.sin(angle)])
