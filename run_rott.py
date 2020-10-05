@@ -21,7 +21,7 @@ if __name__=='__main__':
     """
     #set up default pendulum and show the parameters 
     s1=RottSetup()
-    s1.print_params()      
+    #s1.print_params()
 
     #initialize pendulum and show the parameters
     pp1=RottProperties(s1)    
@@ -35,13 +35,13 @@ if __name__=='__main__':
     t1.integrate(int_scheme=0)
    
     #set up a new pendulum with changed initial conditions
-    s2=RottSetup(g0=90.)
+    s2=RottSetup(g0=30.) # Start angle gamma is 30°
     pp2=RottProperties(s2)
     t2=RottTrajectoryInPhasespace(s2,pp2)    
     t2.integrate()
     
     #plot and save the output   
-    t1.plot(savefig=True,figname='t1')
+    t2.plot(savefig=True,figname='t1')
     #t2.plot(savefig=True,figname='t2')
   
     #overloading of +operator in trajectory_in_phasespace class results 
