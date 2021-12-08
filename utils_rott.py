@@ -8,7 +8,10 @@ import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pylab as plt
 from matplotlib import animation
-
+# importing movie py libraries
+from moviepy.editor import VideoClip
+from moviepy.video.io.bindings import mplfig_to_npimage
+ 
 pi=np.pi
 
 
@@ -509,14 +512,13 @@ class RottTrajectoryInPhasespace:
         """
      
         #set up the figure,axes,line,text boxes for time and energy
-        fig = plt.figure()
-        ax = plt.axes()
-        line, = ax.plot([], [],'o-', lw=3)
+        fig, ax = plt.subplots()
+        line, = ax.plot([], [],'-', lw=3)
         ax.set_xlim([-3,3])
         ax.set_ylim([-3,3])
         ax.set_aspect('equal')
-        time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
-        energy_text = ax.text(0.02, 0.90, '', transform=ax.transAxes)
+        time_text = ax.text(0.02, 0.95, '')#, transform=ax.transAxes)
+        energy_text = ax.text(0.02, 0.90, '')#, transform=ax.transAxes)
         
         #function to produce the axes background that does not change
         def init():
@@ -527,16 +529,24 @@ class RottTrajectoryInPhasespace:
         
         #function to add lines for every snapshot 
         def animate(i):
-            tinst = 4*i*(self.setup).delt
-            time_text.set_text('time=%.1f'%(self.timeinsts)[4*i])
-            energy_text.set_text('energy=%.1f'%(self.etot)[4*i])
+            ax.clear()
+            ax.set_xlim([-1.5,1.5])
+            ax.set_ylim([-1.5,1.5])
+            tinst = 16*i*(self.setup).delt
+            #time_text.set_text('time=%.1f'%(self.timeinsts)[4*i])
+            #energy_text.set_text('energy=%.1f'%(self.etot)[4*i])
             p5,p3,p2,p4=self.pivot_coordinates(tinst)
             #retrieve position of pivot points
+            line, = ax.plot([], [],'-', lw=3)
             line.set_data(zip(p5,p3,p2,p4))
             line.set_c('b')
+            
             #line.set_data(zip(p2,p4))
             #line.set_c('r')
-            return line,
+            ax.plot([p2[0],p4[0]],[p2[1],p4[1]])
+            
+            ax.set_axis_off()
+            return mplfig_to_npimage(fig)
 
         #timing for the animation
         from time import time
@@ -545,10 +555,11 @@ class RottTrajectoryInPhasespace:
         t1=time()
         
         #create and save the animation
-        interval=4*1200*(self.setup).delt-(t1-t0)
-        myanim=animation.FuncAnimation(fig,animate,init_func=init,frames=1200,interval=interval,blit=True)         
-        myanim.save('basic_animation.gif',fps=50, extra_args=['-vcodec', 'libx264'])
-        #return myanim
+        interval=4*1200*(self.setup).delt
+        #myanim=animation.FuncAnimation(fig,animate,init_func=init,frames=1200,blit=True)         
+        animation = VideoClip(animate, duration = 20)
+
+        animation.ipython_display(fps = 20)
        
             
    
@@ -631,7 +642,7 @@ class RottTrajectoryInPhasespace:
         #p2->p3
         
         
-        t=zip(p2,p3)
+        t=zip(self.p2,p3)
         ax.plot(t[0],t[1],color=Lcolor,linewidth=Llwidth)
         #p3->p5
         t=zip(p3,p5)
