@@ -468,7 +468,7 @@ class RottTrajectoryInPhasespace:
         #evolution of energy loss (numerical dissipation)
         self.dE=max(self.etot[0]-np.min(self.etot),np.max(self.etot)-self.etot[0])
             
-    def plot(self,figname,var='adotgdot',savefig=True,holdagain=False):
+    def plot(self,f=None,ax=None,figname="fig_rot",var='adotgdot',savefig=True,holdagain=False):
         """Function to plot the time series of the variables in var.
 
         TODO:
@@ -480,7 +480,8 @@ class RottTrajectoryInPhasespace:
         if not (var=='adotgdot'):
             print('no valid variable to plot')
             raise UserWarning
-        f,ax = plt.subplots()
+        if not f:
+            f,ax = plt.subplots()
         ax.plot(self.timeinsts,self.adot,linewidth=0.5)
         #plt.hold(True)
         ax.plot(self.timeinsts,self.gdot,linewidth=0.5)
@@ -489,7 +490,7 @@ class RottTrajectoryInPhasespace:
             #plt.legend()
             f.savefig(figname+str(self.time)+'.pdf',dpi=300)
             
-        #plt.hold(holdagain)
+        return f,ax
         
     def animate_rott(self,videoname='basic_animation'):#,framerate=20*(self.setup).dt):
         """Creates an animation of the Rott pendulum
@@ -528,11 +529,11 @@ class RottTrajectoryInPhasespace:
             return line, time_text, energy_text
         
         #function to add lines for every snapshot 
-        def animate(i):
+        def animate(i,fps=40):
             ax.clear()
-            ax.set_xlim([-1.5,1.5])
-            ax.set_ylim([-1.5,1.5])
-            tinst = 16*i*(self.setup).delt
+            ax.set_xlim([-3,3])
+            ax.set_ylim([-3,3])
+            tinst = i/fps
             #time_text.set_text('time=%.1f'%(self.timeinsts)[4*i])
             #energy_text.set_text('energy=%.1f'%(self.etot)[4*i])
             p5,p3,p2,p4=self.pivot_coordinates(tinst)
@@ -555,11 +556,10 @@ class RottTrajectoryInPhasespace:
         t1=time()
         
         #create and save the animation
-        interval=4*1200*(self.setup).delt
-        #myanim=animation.FuncAnimation(fig,animate,init_func=init,frames=1200,blit=True)         
-        animation = VideoClip(animate, duration = 20)
+        fps=40
+        animation = VideoClip(animate, duration = 40)
 
-        animation.ipython_display(fps = 20)
+        animation.ipython_display(fps = fps)
        
             
    
