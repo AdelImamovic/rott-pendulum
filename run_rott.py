@@ -20,7 +20,7 @@ if __name__=='__main__':
     For class and function documentation see the ./rott_documentation.html file
     """
     #set up default pendulum and show the parameters 
-    s1=RottSetup()
+    s1=RottSetup(g0=30.)
     #s1.print_params()
 
     #initialize pendulum and show the parameters
@@ -33,6 +33,8 @@ if __name__=='__main__':
     
     #integrate the pendulum with a default scheme   
     t1.integrate(int_scheme=0)
+
+    t1.animate_rott("basic")
    
     #set up a new pendulum with changed initial conditions
     s2=RottSetup(g0=30.) # Start angle gamma is 30°
@@ -49,7 +51,7 @@ if __name__=='__main__':
     
     #animate the pendulum and save the output as test.mp4
     videoname='animation_test'
-    t2.animate_rott(videoname)
+    #t2.animate_rott(videoname)
 
     #t1.energetics(plotme=False)
     
