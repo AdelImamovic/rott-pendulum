@@ -7,18 +7,18 @@ Check out the demo.ipynb to generate the animations and plots below.
 
  ## Linear regime 
 
-![linear.gif](linear.gif)
-![linear_plot.png](linear_plot.png)
+![linear.gif](./animations/linear.gif)
+![linear_plot.png](./animations/linear_plot.png)
 
  ## Chaotic regime
 
-![chaotic.gif](chaotic.gif)
-![linear_plot.png](chaotic_plot.png)
+![chaotic.gif](./animations/chaotic.gif)
+![linear_plot.png](./animations/chaotic_plot.png)
 
 
 ### Sensitivity to initial conditions
 
-![chaotic.gif](chaotic.gif)
-![chaotic2gif](chaotic_2.gif)
+![chaotic.gif](./animations/chaotic.gif)
+![chaotic2gif](./animations/chaotic_2.gif)
 
-![sensitivity.png](sensitivity.png)
+![sensitivity.png](./animations/sensitivity.png)
